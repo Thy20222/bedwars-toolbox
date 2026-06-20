@@ -1,4 +1,4 @@
-package com.github.thy20222.bedwarstoolbox.mixin;
+package dev.thy.bedwarstoolbox.mixin;
 
 import net.minecraft.client.gui.GuiMainMenu;
 import org.spongepowered.asm.mixin.Mixin;

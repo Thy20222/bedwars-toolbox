@@ -1,4 +1,4 @@
-package com.github.thy20222.bedwarstoolbox.init;
+package dev.thy.bedwarstoolbox.init;
 
 import org.spongepowered.asm.lib.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;

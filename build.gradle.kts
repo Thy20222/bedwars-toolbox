@@ -91,21 +91,31 @@ dependencies {
 
 // Tasks:
 
-tasks.withType(JavaCompile::class) {
+tasks.compileJava {
     options.encoding = "UTF-8"
 }
 
-tasks.withType(org.gradle.jvm.tasks.Jar::class) {
-    archiveBaseName.set(modid)
-    manifest.attributes.run {
-        this["FMLCorePluginContainsFMLMod"] = "true"
-        this["ForceLoadAsMod"] = "true"
+tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
 
-        // If you don't want mixins, remove these lines
-        this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
-        this["MixinConfigs"] = "mixins.$modid.json"
-	    if (transformerFile.exists())
-			this["FMLAT"] = "${modid}_at.cfg"
+    archiveBaseName.set(modid)
+
+    from("LICENSE") {
+        rename { "LICENSE_${modid}" }
+    }
+
+    manifest {
+        attributes(
+            mapOf(
+                "FMLCorePluginContainsFMLMod" to "true",
+                "ForceLoadAsMod" to "true",
+                "TweakClass" to "org.spongepowered.asm.launch.MixinTweaker",
+                "MixinConfigs" to "mixins.$modid.json"
+            )
+        )
+    }
+
+    if (transformerFile.exists()) {
+        manifest.attributes["FMLAT"] = "${modid}_at.cfg"
     }
 }
 
