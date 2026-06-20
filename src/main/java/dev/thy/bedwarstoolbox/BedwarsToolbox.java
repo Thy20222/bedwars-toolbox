@@ -5,6 +5,8 @@ import dev.thy.bedwarstoolbox.core.config.SettingManager;
 import dev.thy.bedwarstoolbox.core.event.EventBus;
 import dev.thy.bedwarstoolbox.core.event.Render2DEvent;
 import dev.thy.bedwarstoolbox.core.event.Render3DEvent;
+import dev.thy.bedwarstoolbox.core.gui.GuiManager;
+import dev.thy.bedwarstoolbox.feature.example.ExampleFeature;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -18,13 +20,20 @@ public class BedwarsToolbox {
     private FeatureManager featureManager;
     private SettingManager settingManager;
     private EventBus eventBus;
+    private GuiManager guiManager;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         eventBus = new EventBus();
         settingManager = new SettingManager();
         featureManager = new FeatureManager();
+        guiManager = new GuiManager(featureManager);
+
+        ExampleFeature exampleFeature = new ExampleFeature();
+        featureManager.register(exampleFeature);
+        settingManager.register(exampleFeature);
         eventBus.register(featureManager);
+        eventBus.register(exampleFeature);
 
         MinecraftForge.EVENT_BUS.register(this);
         FMLCommonHandler.instance().bus().register(this);
@@ -40,6 +49,10 @@ public class BedwarsToolbox {
 
     public EventBus getEventBus() {
         return eventBus;
+    }
+
+    public GuiManager getGuiManager() {
+        return guiManager;
     }
 
     @SubscribeEvent
