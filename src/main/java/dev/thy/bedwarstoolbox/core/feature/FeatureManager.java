@@ -1,4 +1,9 @@
-package dev.thy.bedwarstoolbox.core;
+package dev.thy.bedwarstoolbox.core.feature;
+
+import dev.thy.bedwarstoolbox.core.event.Render2DEvent;
+import dev.thy.bedwarstoolbox.core.event.Render3DEvent;
+import dev.thy.bedwarstoolbox.core.event.Subscribe;
+import dev.thy.bedwarstoolbox.core.event.TickEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,5 +34,20 @@ public class FeatureManager {
                 feature.onRender();
             }
         }
+    }
+
+    @Subscribe
+    public void onTick(TickEvent event) {
+        onTick();
+    }
+
+    @Subscribe
+    public void onRender2D(Render2DEvent event) {
+        onRender();
+    }
+
+    @Subscribe
+    public void onRender3D(Render3DEvent event) {
+        onRender();
     }
 }

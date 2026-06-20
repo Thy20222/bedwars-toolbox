@@ -1,7 +1,14 @@
-package dev.thy.bedwarstoolbox.core;
+package dev.thy.bedwarstoolbox.core.feature;
+
+import dev.thy.bedwarstoolbox.core.config.Setting;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public abstract class Feature {
     protected boolean enabled;
+    private final List<Setting<?>> settings = new ArrayList<>();
 
     public boolean isEnabled() {
         return enabled;
@@ -18,6 +25,14 @@ public abstract class Feature {
         } else {
             onDisable();
         }
+    }
+
+    public List<Setting<?>> getSettings() {
+        return Collections.unmodifiableList(settings);
+    }
+
+    protected void registerSetting(Setting<?> setting) {
+        settings.add(setting);
     }
 
     public void onEnable() {
