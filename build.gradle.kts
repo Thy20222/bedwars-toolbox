@@ -106,10 +106,6 @@ tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
 
     archiveBaseName.set(modid)
 
-    from("LICENSE") {
-        rename { "LICENSE_${modid}" }
-    }
-
     manifest {
         attributes(
             mapOf(
@@ -155,6 +151,11 @@ tasks.shadowJar {
     destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
     archiveClassifier.set("non-obfuscated-with-deps")
     configurations = listOf(shadowImpl)
+
+    from("LICENSE") {
+        rename { "LICENSE_${modid}" }
+    }
+
     doLast {
         configurations.forEach {
             println("Copying dependencies into mod: ${it.files}")
