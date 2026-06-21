@@ -5,7 +5,7 @@ plugins {
     java
     id("gg.essential.loom") version "0.10.0.+"
     id("dev.architectury.architectury-pack200") version "0.1.3"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 //Constants:
@@ -83,16 +83,23 @@ dependencies {
         isTransitive = false
     }
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
-
-    // If you don't want to log in with your real minecraft account, remove this line
-    runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
-
 }
 
 // Tasks:
 
 tasks.compileJava {
     options.encoding = "UTF-8"
+}
+
+
+tasks.withType(JavaExec::class).configureEach {
+    if (name == "runClient") {
+        javaLauncher.set(
+            javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(8))
+            }
+        )
+    }
 }
 
 tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
