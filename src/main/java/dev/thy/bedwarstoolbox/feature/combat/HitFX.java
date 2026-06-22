@@ -11,7 +11,7 @@ public class HitFX extends Feature {
     private final Minecraft minecraft = Minecraft.getMinecraft();
 
     public HitFX() {
-        super(FeatureCategory.RENDER);
+        super(FeatureCategory.COMBAT);
     }
 
     @Subscribe

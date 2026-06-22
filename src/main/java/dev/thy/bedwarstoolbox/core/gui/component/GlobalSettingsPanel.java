@@ -19,6 +19,8 @@ public class GlobalSettingsPanel extends GuiComponent {
     private static final int COLLAPSED_COLOR_HEIGHT = 22;
     private static final int SLIDER_HEIGHT = 8;
     private static final int SPACING = 4;
+    private static final float TEXT_SCALE = 0.92F;
+    private static final int NUMBER_SLIDER_EXTENSION = 8;
 
     private final GuiManager guiManager;
     private final Map<ColorSetting, Boolean> collapsedColorSettings = new IdentityHashMap<>();
@@ -46,7 +48,7 @@ public class GlobalSettingsPanel extends GuiComponent {
         Gui.drawRect(x, y, x + width, y + panelHeight, guiManager.getPanelColor());
         Gui.drawRect(x, y, x + width, y + HEADER_HEIGHT, guiManager.getHeaderColor());
         Gui.drawRect(x, y + HEADER_HEIGHT - 1, x + width, y + HEADER_HEIGHT, guiManager.getAccentColor());
-        font.drawStringWithShadow("Global Settings", x + 10, y + 4.5f, 0xFFFFFFFF);
+        drawTextWithShadow(font, "Global Settings", x + 10, y + 4.5f, 0xFFFFFFFF);
 
         int rowY = y + HEADER_HEIGHT + SPACING;
         for (Setting<?> setting : guiManager.getSettingManager().getGlobalSettings()) {
@@ -87,17 +89,17 @@ public class GlobalSettingsPanel extends GuiComponent {
 
     private void renderNumberSetting(NumberSetting setting, int rowY) {
         TrueTypeFontRenderer font = guiManager.getFontRenderer();
-        int sliderX = getSliderX();
-        int sliderY = rowY + 14;
-        int sliderWidth = getSliderWidth();
+        int sliderX = getNumberSliderX();
+        int sliderY = rowY + 16;
+        int sliderWidth = getNumberSliderWidth();
         double range = setting.getMaximum() - setting.getMinimum();
         double progress = range == 0.0D ? 0.0D : (setting.getValue() - setting.getMinimum()) / range;
         int fillWidth = Math.round((float) (sliderWidth * Math.max(0.0D, Math.min(1.0D, progress))));
         String value = formatNumber(setting.getValue());
 
         Gui.drawRect(x + 10, rowY, x + width - 10, rowY + NUMBER_SETTING_HEIGHT, guiManager.getSettingColor());
-        font.drawString(setting.getName(), x + 16, rowY, 0xFFFFFFFF);
-        font.drawString(value, x + width - 16 - font.getStringWidth(value), rowY, 0xFFE0E0E0);
+        drawText(font, setting.getName(), x + 16, rowY, 0xFFFFFFFF);
+        drawText(font, value, x + width - 16 - font.getStringWidth(value), rowY, 0xFFE0E0E0);
         Gui.drawRect(sliderX, sliderY, sliderX + sliderWidth, sliderY + SLIDER_HEIGHT, guiManager.getRowColor());
         Gui.drawRect(sliderX, sliderY, sliderX + fillWidth, sliderY + SLIDER_HEIGHT, guiManager.getAccentColor());
         Gui.drawRect(sliderX + fillWidth - 1, sliderY - 1, sliderX + fillWidth + 1, sliderY + SLIDER_HEIGHT + 1, 0xFFFFFFFF);
@@ -108,8 +110,8 @@ public class GlobalSettingsPanel extends GuiComponent {
         boolean collapsed = isColorSettingCollapsed(setting);
 
         Gui.drawRect(x + 10, rowY, x + width - 10, rowY + getSettingHeight(setting), guiManager.getSettingColor());
-        font.drawString(setting.getName(), x + 16, rowY + 3, 0xFFFFFFFF);
-        font.drawString(collapsed ? "+" : "-", x + width - 50, rowY + 3, 0xFFE0E0E0);
+        drawText(font, setting.getName(), x + 16, rowY + 3, 0xFFFFFFFF);
+        drawText(font, collapsed ? "+" : "-", x + width - 50, rowY + 3, 0xFFE0E0E0);
         Gui.drawRect(x + width - 34, rowY + 5, x + width - 14, rowY + 15, setting.toArgb());
         Gui.drawRect(x + width - 35, rowY + 4, x + width - 13, rowY + 5, 0x66FFFFFF);
         Gui.drawRect(x + width - 35, rowY + 15, x + width - 13, rowY + 16, 0x66FFFFFF);
@@ -133,11 +135,11 @@ public class GlobalSettingsPanel extends GuiComponent {
         int sliderWidth = getSliderWidth();
         int fillWidth = Math.round(sliderWidth * (value / 255.0F));
 
-        font.drawString(label, x + 18, sliderY - 2, 0xFFE0E0E0);
+        drawText(font, label, x + 18, sliderY - 2, 0xFFE0E0E0);
         Gui.drawRect(sliderX, sliderY + 2, sliderX + sliderWidth, sliderY + 2 + SLIDER_HEIGHT, guiManager.getRowColor());
         Gui.drawRect(sliderX, sliderY + 1, sliderX + fillWidth, sliderY + 1 + SLIDER_HEIGHT, fillColor);
         Gui.drawRect(sliderX + fillWidth - 1, sliderY, sliderX + fillWidth + 1, sliderY + SLIDER_HEIGHT + 2, 0xFFFFFFFF);
-        font.drawString(String.valueOf(getColorChannel(setting, channel)), x + width - 38, sliderY - 2, 0xFFE0E0E0);
+        drawText(font, String.valueOf(getColorChannel(setting, channel)), x + width - 38, sliderY - 2, 0xFFE0E0E0);
     }
 
     private void handleSettingClick(Setting<?> setting, int rowY, int mouseX, int mouseY, int mouseButton) {
@@ -161,8 +163,8 @@ public class GlobalSettingsPanel extends GuiComponent {
     }
 
     private void updateNumberSlider(NumberSetting setting, int mouseX) {
-        int sliderX = getSliderX();
-        int sliderWidth = getSliderWidth();
+        int sliderX = getNumberSliderX();
+        int sliderWidth = getNumberSliderWidth();
         double progress = (mouseX - sliderX) / (double) sliderWidth;
         progress = Math.max(0.0D, Math.min(1.0D, progress));
         setting.setValue(setting.getMinimum() + (setting.getMaximum() - setting.getMinimum()) * progress);
@@ -229,6 +231,14 @@ public class GlobalSettingsPanel extends GuiComponent {
         return width - 92;
     }
 
+    private int getNumberSliderX() {
+        return getSliderX() - NUMBER_SLIDER_EXTENSION;
+    }
+
+    private int getNumberSliderWidth() {
+        return getSliderWidth() + NUMBER_SLIDER_EXTENSION * 2;
+    }
+
     private int getSettingHeight(Setting<?> setting) {
         if (setting instanceof ColorSetting) {
             return isColorSettingCollapsed((ColorSetting) setting) ? COLLAPSED_COLOR_HEIGHT : COLOR_SETTING_HEIGHT;
@@ -262,5 +272,13 @@ public class GlobalSettingsPanel extends GuiComponent {
 
     private String formatNumber(double value) {
         return String.format("%.2f", value);
+    }
+
+    private void drawText(TrueTypeFontRenderer font, String text, float textX, float textY, int color) {
+        font.drawStringScaled(text, textX, textY, color, TEXT_SCALE);
+    }
+
+    private void drawTextWithShadow(TrueTypeFontRenderer font, String text, float textX, float textY, int color) {
+        font.drawStringWithShadowScaled(text, textX, textY, color, TEXT_SCALE);
     }
 }

@@ -22,11 +22,12 @@ public class ClickGuiScreen extends GuiScreen {
     private static final int PAGE_BUTTON_SIZE = 18;
     private static final int PAGE_LABEL_WIDTH = 128;
     private static final int PAGE_SELECTOR_GAP = 4;
+    private static Page lastActivePage = Page.CLICK_GUI;
 
     private final GuiManager guiManager;
     private final GuiScreen parentScreen;
     private final List<GuiComponent> components = new ArrayList<>();
-    private Page activePage = Page.CLICK_GUI;
+    private Page activePage = lastActivePage;
 
     public ClickGuiScreen(GuiManager guiManager) {
         this(null, guiManager);
@@ -199,6 +200,7 @@ public class ClickGuiScreen extends GuiScreen {
         }
 
         activePage = Page.values()[activePage.ordinal() + direction];
+        lastActivePage = activePage;
         initGui();
     }
 

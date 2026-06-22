@@ -3,6 +3,7 @@ package dev.thy.bedwarstoolbox.core.gui;
 import dev.thy.bedwarstoolbox.core.config.ColorSetting;
 import dev.thy.bedwarstoolbox.core.config.NumberSetting;
 import dev.thy.bedwarstoolbox.core.config.SettingManager;
+import dev.thy.bedwarstoolbox.core.feature.FeatureCategory;
 import dev.thy.bedwarstoolbox.core.feature.FeatureManager;
 import dev.thy.bedwarstoolbox.core.gui.font.TrueTypeFontRenderer;
 import net.minecraft.client.Minecraft;
@@ -24,6 +25,7 @@ public class GuiManager {
     private final ColorSetting rowColor = new ColorSetting("ClickGui Row Color", 35, 38, 44, 230);
     private final ColorSetting settingColor = new ColorSetting("ClickGui Setting Color", 23, 25, 29, 220);
     private final ColorSetting disabledTextColor = new ColorSetting("ClickGui Disabled Text Color", 150, 154, 162, 255);
+    private FeatureCategory selectedFeatureCategory = FeatureCategory.COMBAT;
     private final KeyBinding clickGuiKeyBinding = new KeyBinding(
             "key.bedwarstoolbox.click_gui",
             Keyboard.KEY_RSHIFT,
@@ -88,6 +90,14 @@ public class GuiManager {
 
     public TrueTypeFontRenderer getFontRenderer() {
         return fontRenderer;
+    }
+
+    public FeatureCategory getSelectedFeatureCategory() {
+        return selectedFeatureCategory;
+    }
+
+    public void setSelectedFeatureCategory(FeatureCategory selectedFeatureCategory) {
+        this.selectedFeatureCategory = selectedFeatureCategory;
     }
 
     public double getClickGuiX() {

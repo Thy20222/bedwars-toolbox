@@ -59,6 +59,14 @@ public class TrueTypeFontRenderer {
         return drawString(text, x, y, color);
     }
 
+    public int drawStringScaled(String text, float x, float y, int color, float scale) {
+        return drawScaled(text, x, y, color, scale, false);
+    }
+
+    public int drawStringWithShadowScaled(String text, float x, float y, int color, float scale) {
+        return drawScaled(text, x, y, color, scale, true);
+    }
+
     public int getStringWidth(String text) {
         if (text == null || text.isEmpty()) {
             return 0;
@@ -77,6 +85,22 @@ public class TrueTypeFontRenderer {
         }
 
         return Math.round(metrics.getHeight() / (float) RENDER_SCALE);
+    }
+
+    private int drawScaled(String text, float x, float y, int color, float scale, boolean shadow) {
+        if (scale == 1.0F) {
+            return shadow ? drawStringWithShadow(text, x, y, color) : drawString(text, x, y, color);
+        }
+
+        float halfHeight = getStringHeight() / 2.0F;
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(x, y + halfHeight, 0.0F);
+        GlStateManager.scale(scale, scale, 1.0F);
+        int width = shadow
+                ? drawStringWithShadow(text, 0.0F, -halfHeight, color)
+                : drawString(text, 0.0F, -halfHeight, color);
+        GlStateManager.popMatrix();
+        return Math.round(width * scale);
     }
 
     private void loadFont(float size) {
