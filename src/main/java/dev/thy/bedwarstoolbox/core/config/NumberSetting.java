@@ -25,4 +25,9 @@ public class NumberSetting extends Setting<Double> {
     public double getMaximum() {
         return maximum;
     }
+
+    @Override
+    public void setValue(Double value) {
+        super.setValue(Math.max(minimum, Math.min(maximum, value)));
+    }
 }

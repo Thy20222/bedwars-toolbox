@@ -1,5 +1,6 @@
 package dev.thy.bedwarstoolbox.core.feature;
 
+import dev.thy.bedwarstoolbox.core.config.BooleanSetting;
 import dev.thy.bedwarstoolbox.core.config.Setting;
 
 import java.util.ArrayList;
@@ -8,7 +9,18 @@ import java.util.List;
 
 public abstract class Feature {
     protected boolean enabled;
+    private final FeatureCategory category;
     private final List<Setting<?>> settings = new ArrayList<>();
+    private final BooleanSetting enabledSetting = new BooleanSetting("Enabled", false);
+
+    public Feature() {
+        this(FeatureCategory.MISC);
+    }
+
+    public Feature(FeatureCategory category) {
+        this.category = category;
+        registerSetting(enabledSetting);
+    }
 
     public boolean isEnabled() {
         return enabled;
@@ -20,11 +32,20 @@ public abstract class Feature {
         }
 
         this.enabled = enabled;
+        enabledSetting.setValue(enabled);
         if (enabled) {
             onEnable();
         } else {
             onDisable();
         }
+    }
+
+    public BooleanSetting getEnabledSetting() {
+        return enabledSetting;
+    }
+
+    public FeatureCategory getCategory() {
+        return category;
     }
 
     public List<Setting<?>> getSettings() {
