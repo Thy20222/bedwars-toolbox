@@ -62,6 +62,17 @@ public class SettingManager {
         return Collections.unmodifiableList(settings);
     }
 
+    public List<Setting<?>> getGlobalSettings() {
+        List<Setting<?>> globalSettings = new ArrayList<>();
+        for (Setting<?> setting : settings) {
+            if (!settingOwners.containsKey(setting)) {
+                globalSettings.add(setting);
+            }
+        }
+
+        return Collections.unmodifiableList(globalSettings);
+    }
+
     public List<Setting<?>> getSettings(Feature feature) {
         List<Setting<?>> settings = featureSettings.get(feature);
         if (settings == null) {

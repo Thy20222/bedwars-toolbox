@@ -1,9 +1,13 @@
 package dev.thy.bedwarstoolbox.core.gui;
 
+import dev.thy.bedwarstoolbox.core.gui.component.GlobalSettingsPanel;
 import dev.thy.bedwarstoolbox.core.gui.component.FeaturePanel;
 import dev.thy.bedwarstoolbox.core.gui.component.GuiComponent;
+import dev.thy.bedwarstoolbox.core.gui.font.TrueTypeFontRenderer;
+import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
@@ -14,10 +18,15 @@ import java.util.List;
 public class ClickGuiScreen extends GuiScreen {
     private static final double SCALE_STEP = 0.05D;
     private static final double SCROLL_STEP = 12.0D;
+    private static final int PAGE_SELECTOR_Y = 8;
+    private static final int PAGE_BUTTON_SIZE = 18;
+    private static final int PAGE_LABEL_WIDTH = 128;
+    private static final int PAGE_SELECTOR_GAP = 4;
 
     private final GuiManager guiManager;
     private final GuiScreen parentScreen;
     private final List<GuiComponent> components = new ArrayList<>();
+    private Page activePage = Page.CLICK_GUI;
 
     public ClickGuiScreen(GuiManager guiManager) {
         this(null, guiManager);
@@ -31,7 +40,11 @@ public class ClickGuiScreen extends GuiScreen {
     @Override
     public void initGui() {
         components.clear();
-        components.add(new FeaturePanel(0, 0, 240, guiManager.getFeatureManager()));
+        if (activePage == Page.CLICK_GUI) {
+            components.add(new FeaturePanel(0, 34, 260, guiManager));
+        } else if (activePage == Page.GLOBAL_SETTINGS) {
+            components.add(new GlobalSettingsPanel(0, 34, 280, guiManager));
+        }
     }
 
     @Override
@@ -46,6 +59,7 @@ public class ClickGuiScreen extends GuiScreen {
         GlStateManager.translate(guiManager.getClickGuiX(), guiManager.getClickGuiY(), 0.0D);
         GlStateManager.scale(scale, scale, 1.0D);
 
+        renderPageSelector();
         for (GuiComponent component : components) {
             component.render(mc, transformedMouseX, transformedMouseY, partialTicks);
         }
@@ -56,6 +70,14 @@ public class ClickGuiScreen extends GuiScreen {
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        if (mouseButton == 0 || mouseButton == 1) {
+            playClickSound();
+        }
+
+        if (handlePageSelectorClick(toLocalX(mouseX), toLocalY(mouseY), mouseButton)) {
+            return;
+        }
+
         for (GuiComponent component : components) {
             component.mouseClicked(toLocalX(mouseX), toLocalY(mouseY), mouseButton);
         }
@@ -118,5 +140,80 @@ public class ClickGuiScreen extends GuiScreen {
 
     private boolean isShiftDown() {
         return Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+    }
+
+    private void renderPageSelector() {
+        TrueTypeFontRenderer font = guiManager.getFontRenderer();
+        int selectorWidth = PAGE_BUTTON_SIZE * 2 + PAGE_LABEL_WIDTH + PAGE_SELECTOR_GAP * 2;
+        int startX = toLocalX(width / 2) - selectorWidth / 2;
+        int selectorY = toLocalY(PAGE_SELECTOR_Y);
+        int leftX = startX;
+        int labelX = leftX + PAGE_BUTTON_SIZE + PAGE_SELECTOR_GAP;
+        int rightX = labelX + PAGE_LABEL_WIDTH + PAGE_SELECTOR_GAP;
+        int enabledArrowColor = guiManager.getAccentColor();
+        int disabledArrowColor = 0xFF55575D;
+        int labelColor = guiManager.getHeaderColor();
+        String label = "<" + activePage.displayName + ">";
+
+        drawRect(leftX, selectorY, leftX + PAGE_BUTTON_SIZE, selectorY + PAGE_BUTTON_SIZE, canMovePage(-1) ? enabledArrowColor : disabledArrowColor);
+        drawRect(labelX, selectorY, labelX + PAGE_LABEL_WIDTH, selectorY + PAGE_BUTTON_SIZE, labelColor);
+        drawRect(rightX, selectorY, rightX + PAGE_BUTTON_SIZE, selectorY + PAGE_BUTTON_SIZE, canMovePage(1) ? enabledArrowColor : disabledArrowColor);
+
+        font.drawString("<", leftX + 6, selectorY + 3, 0xFFFFFFFF);
+        font.drawString(label, labelX + (PAGE_LABEL_WIDTH - font.getStringWidth(label)) / 2, selectorY + 3, 0xFFFFFFFF);
+        font.drawString(">", rightX + 6, selectorY + 3, 0xFFFFFFFF);
+    }
+
+    private boolean handlePageSelectorClick(int mouseX, int mouseY, int mouseButton) {
+        int selectorY = toLocalY(PAGE_SELECTOR_Y);
+        if (mouseButton != 0 || mouseY < selectorY || mouseY >= selectorY + PAGE_BUTTON_SIZE) {
+            return false;
+        }
+
+        int selectorWidth = PAGE_BUTTON_SIZE * 2 + PAGE_LABEL_WIDTH + PAGE_SELECTOR_GAP * 2;
+        int startX = toLocalX(width / 2) - selectorWidth / 2;
+        int leftX = startX;
+        int labelX = leftX + PAGE_BUTTON_SIZE + PAGE_SELECTOR_GAP;
+        int rightX = labelX + PAGE_LABEL_WIDTH + PAGE_SELECTOR_GAP;
+
+        if (mouseX >= leftX && mouseX < leftX + PAGE_BUTTON_SIZE) {
+            movePage(-1);
+            return true;
+        }
+        if (mouseX >= rightX && mouseX < rightX + PAGE_BUTTON_SIZE) {
+            movePage(1);
+            return true;
+        }
+
+        return mouseX >= labelX && mouseX < labelX + PAGE_LABEL_WIDTH;
+    }
+
+    private boolean canMovePage(int direction) {
+        int index = activePage.ordinal() + direction;
+        return index >= 0 && index < Page.values().length;
+    }
+
+    private void movePage(int direction) {
+        if (!canMovePage(direction)) {
+            return;
+        }
+
+        activePage = Page.values()[activePage.ordinal() + direction];
+        initGui();
+    }
+
+    private void playClickSound() {
+        mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("gui.button.press"), 1.0F));
+    }
+
+    private enum Page {
+        CLICK_GUI("ClickGui"),
+        GLOBAL_SETTINGS("Global Settings");
+
+        private final String displayName;
+
+        Page(String displayName) {
+            this.displayName = displayName;
+        }
     }
 }
