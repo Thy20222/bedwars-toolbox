@@ -2,6 +2,7 @@ package dev.thy.bedwarstoolbox.core.gui.component;
 
 import dev.thy.bedwarstoolbox.core.config.BooleanSetting;
 import dev.thy.bedwarstoolbox.core.config.ColorSetting;
+import dev.thy.bedwarstoolbox.core.config.NumberSetting;
 import dev.thy.bedwarstoolbox.core.config.Setting;
 import dev.thy.bedwarstoolbox.core.feature.Feature;
 import dev.thy.bedwarstoolbox.core.feature.FeatureCategory;
@@ -31,6 +32,7 @@ public class FeaturePanel extends GuiComponent {
     private FeatureCategory activeCategory = FeatureCategory.RENDER;
     private ColorSetting draggingColorSetting;
     private int draggingColorChannel = -1;
+    private NumberSetting draggingNumberSetting;
 
     public FeaturePanel(int x, int y, int width, GuiManager guiManager) {
         super(x, y, width, HEADER_HEIGHT);
@@ -111,6 +113,7 @@ public class FeaturePanel extends GuiComponent {
     public void mouseReleased(int mouseX, int mouseY, int state) {
         draggingColorSetting = null;
         draggingColorChannel = -1;
+        draggingNumberSetting = null;
     }
 
     private void renderFeatureRow(Minecraft minecraft, Feature feature, int rowY) {
@@ -157,6 +160,8 @@ public class FeaturePanel extends GuiComponent {
             renderBooleanSetting(minecraft, feature, (BooleanSetting) setting, rowY);
         } else if (setting instanceof ColorSetting) {
             renderColorSetting(minecraft, (ColorSetting) setting, rowY, mouseX, mouseY);
+        } else if (setting instanceof NumberSetting) {
+            renderNumberSetting(minecraft, (NumberSetting) setting, rowY, mouseX);
         }
     }
 
@@ -199,6 +204,28 @@ public class FeaturePanel extends GuiComponent {
         renderColorSlider(minecraft, setting, 3, "A", setting.getAlpha(), sliderY + 36, 0xFFAAAAAA);
     }
 
+    private void renderNumberSetting(Minecraft minecraft, NumberSetting setting, int rowY, int mouseX) {
+        TrueTypeFontRenderer font = guiManager.getFontRenderer();
+        if (draggingNumberSetting == setting && Mouse.isButtonDown(0)) {
+            updateNumberSlider(setting, mouseX);
+        }
+
+        int sliderX = getSliderX();
+        int sliderWidth = getSliderWidth();
+        double range = setting.getMaximum() - setting.getMinimum();
+        double normalized = range <= 0.0D ? 0.0D : (setting.getValue() - setting.getMinimum()) / range;
+        normalized = Math.max(0.0D, Math.min(1.0D, normalized));
+        int fillWidth = (int) Math.round(sliderWidth * normalized);
+        String value = String.format(java.util.Locale.US, "%.2f", setting.getValue());
+
+        Gui.drawRect(x + 10, rowY, x + width - 10, rowY + BOOLEAN_SETTING_HEIGHT, guiManager.getSettingColor());
+        font.drawString(setting.getName(), x + 16, rowY, 0xFFE0E0E0);
+        font.drawString(value, x + width - 16 - font.getStringWidth(value), rowY, 0xFFE0E0E0);
+        Gui.drawRect(sliderX, rowY + BOOLEAN_SETTING_HEIGHT - 6, sliderX + sliderWidth, rowY + BOOLEAN_SETTING_HEIGHT - 3, guiManager.getRowColor());
+        Gui.drawRect(sliderX, rowY + BOOLEAN_SETTING_HEIGHT - 7, sliderX + fillWidth, rowY + BOOLEAN_SETTING_HEIGHT - 2, guiManager.getAccentColor());
+        Gui.drawRect(sliderX + fillWidth - 1, rowY + BOOLEAN_SETTING_HEIGHT - 8, sliderX + fillWidth + 1, rowY + BOOLEAN_SETTING_HEIGHT - 1, 0xFFFFFFFF);
+    }
+
     private void renderColorSlider(Minecraft minecraft, ColorSetting setting, int channel, String label, int value, int sliderY, int fillColor) {
         TrueTypeFontRenderer font = guiManager.getFontRenderer();
         int sliderX = getSliderX();
@@ -235,6 +262,9 @@ public class FeaturePanel extends GuiComponent {
                 draggingColorChannel = channel;
                 updateColorSlider(colorSetting, channel, mouseX);
             }
+        } else if (setting instanceof NumberSetting) {
+            draggingNumberSetting = (NumberSetting) setting;
+            updateNumberSlider(draggingNumberSetting, mouseX);
         }
     }
 
@@ -272,6 +302,16 @@ public class FeaturePanel extends GuiComponent {
         } else {
             setting.setAlpha(value);
         }
+    }
+
+    private void updateNumberSlider(NumberSetting setting, int mouseX) {
+        int sliderX = getSliderX();
+        int sliderWidth = getSliderWidth();
+        double normalized = (mouseX - sliderX) / (double) sliderWidth;
+        normalized = Math.max(0.0D, Math.min(1.0D, normalized));
+        double value = setting.getMinimum() + (setting.getMaximum() - setting.getMinimum()) * normalized;
+
+        setting.setValue(Math.round(value * 100.0D) / 100.0D);
     }
 
     private int getColorChannel(ColorSetting setting, int channel) {
@@ -324,7 +364,9 @@ public class FeaturePanel extends GuiComponent {
     }
 
     private String getFeatureName(Feature feature) {
-        return feature.getClass().getSimpleName();
+        return feature.getClass().getSimpleName()
+                .replaceAll("(?<=[a-z0-9])(?=[A-Z])", " ")
+                .replaceAll("(?<=[A-Z])(?=[A-Z][a-z])", " ");
     }
 
     private boolean isFeatureCollapsed(Feature feature) {
@@ -337,6 +379,7 @@ public class FeaturePanel extends GuiComponent {
         if (collapsed) {
             draggingColorSetting = null;
             draggingColorChannel = -1;
+            draggingNumberSetting = null;
         }
     }
 

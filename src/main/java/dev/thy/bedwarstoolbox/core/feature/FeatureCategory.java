@@ -1,8 +1,7 @@
 package dev.thy.bedwarstoolbox.core.feature;
 
 public enum FeatureCategory {
-    RENDER("Render"),
-    MISC("Misc");
+    RENDER("Render");
 
     private final String displayName;
 

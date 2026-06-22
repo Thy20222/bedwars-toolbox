@@ -14,7 +14,7 @@ public abstract class Feature {
     private final BooleanSetting enabledSetting = new BooleanSetting("Enabled", false);
 
     public Feature() {
-        this(FeatureCategory.MISC);
+        this(FeatureCategory.RENDER);
     }
 
     public Feature(FeatureCategory category) {

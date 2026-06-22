@@ -6,8 +6,9 @@ import dev.thy.bedwarstoolbox.core.event.Render2DEvent;
 import dev.thy.bedwarstoolbox.core.event.Render3DEvent;
 import dev.thy.bedwarstoolbox.core.event.Subscribe;
 import dev.thy.bedwarstoolbox.core.event.TickEvent;
-import dev.thy.bedwarstoolbox.feature.example.ExampleFeature;
+import dev.thy.bedwarstoolbox.feature.combat.HitFX;
 import dev.thy.bedwarstoolbox.feature.render.BlockOverlay;
+import dev.thy.bedwarstoolbox.feature.render.TNTTimer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,8 +28,9 @@ public class FeatureManager {
     }
 
     private void registerFeatures() {
-        register(new ExampleFeature());
         register(new BlockOverlay());
+        register(new HitFX());
+        register(new TNTTimer());
     }
 
     public List<Feature> getFeatures() {
