@@ -11,6 +11,7 @@ import dev.thy.bedwarstoolbox.core.stats.BedwarsStatsService;
 import dev.thy.bedwarstoolbox.core.stats.BedwarsStatsService.BedwarsStats;
 import dev.thy.bedwarstoolbox.core.stats.BedwarsStatsService.BedwarsTagType;
 import net.minecraft.client.Minecraft;
+import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
@@ -32,7 +33,10 @@ public class BedwarsOverlay extends Feature implements BedwarsStatsService.TagVi
     private final BooleanSetting showZeroFinals = new BooleanSetting("Show 0F Tag", true);
     private final BooleanSetting useUrchinTags = new BooleanSetting("Use Urchin Tags", false);
     private final BooleanSetting showUrchinTags = new BooleanSetting("Show Urchin Tags", true);
+    private final BooleanSetting retryFailedLookups = new BooleanSetting("Retry Failed Lookups", false);
+    private final StringSetting hypixelApiKey = new StringSetting("Hypixel API Key", "");
     private final StringSetting urchinKey = new StringSetting("Urchin API Key", "");
+    private boolean waitingForAutoWho;
 
     public BedwarsOverlay() {
         super(FeatureCategory.RENDER);
@@ -47,6 +51,8 @@ public class BedwarsOverlay extends Feature implements BedwarsStatsService.TagVi
         registerSetting(showZeroFinals);
         registerSetting(useUrchinTags);
         registerSetting(showUrchinTags);
+        registerSetting(retryFailedLookups);
+        registerSetting(hypixelApiKey);
         registerSetting(urchinKey);
     }
 
@@ -63,13 +69,24 @@ public class BedwarsOverlay extends Feature implements BedwarsStatsService.TagVi
         syncUrchinConfig();
 
         String message = event.getMessage().getUnformattedText();
+        if (isLobbyOrServerTransferMessage(message)) {
+            waitingForAutoWho = false;
+            BedwarsStatsService.setBedwarsGameActive(false);
+            return;
+        }
+
         if (autoWho.getValue() && isBedwarsStartMessage(message)) {
+            waitingForAutoWho = true;
+            BedwarsStatsService.setBedwarsGameActive(true);
             minecraft.thePlayer.sendChatMessage("/who");
             return;
         }
 
-        if (message.startsWith("ONLINE:")) {
+        if (waitingForAutoWho && message.startsWith("ONLINE:")) {
+            waitingForAutoWho = false;
+            BedwarsStatsService.setBedwarsGameActive(true);
             List<String> players = parseOnlinePlayers(message);
+            BedwarsStatsService.setBedwarsPlayers(players);
             BedwarsStatsService.requestAll(players, this::showThreatIfNeeded);
         }
     }
@@ -102,6 +119,16 @@ public class BedwarsOverlay extends Feature implements BedwarsStatsService.TagVi
         BedwarsStatsService.clearCache();
     }
 
+    public static void setHypixelApiKey(String key) {
+        if (instance == null) {
+            return;
+        }
+
+        instance.hypixelApiKey.setValue(key);
+        instance.syncStatsConfig();
+        BedwarsStatsService.clearCache();
+    }
+
     @Override
     public boolean isVisible(BedwarsTagType type) {
         if (isUrchinTag(type)) {
@@ -126,6 +153,12 @@ public class BedwarsOverlay extends Feature implements BedwarsStatsService.TagVi
     }
 
     private void syncUrchinConfig() {
+        syncStatsConfig();
+    }
+
+    private void syncStatsConfig() {
+        BedwarsStatsService.configureHypixelApiKey("bedwars_overlay", hypixelApiKey.getValue());
+        BedwarsStatsService.configureRetryFailedLookups(retryFailedLookups.getValue());
         BedwarsStatsService.configureUrchin("bedwars_overlay", useUrchinTags.getValue(), urchinKey.getValue());
     }
 
@@ -138,7 +171,10 @@ public class BedwarsOverlay extends Feature implements BedwarsStatsService.TagVi
     }
 
     private void showThreatIfNeeded(BedwarsStats stats) {
-        if (!isEnabled() || !threatChat.getValue() || minecraft.thePlayer == null) {
+        if (!isEnabled()
+                || !threatChat.getValue()
+                || minecraft.thePlayer == null
+                || BedwarsStatsService.isSelfPlayer(stats.getPlayerName())) {
             return;
         }
 
@@ -146,15 +182,33 @@ public class BedwarsOverlay extends Feature implements BedwarsStatsService.TagVi
             minecraft.thePlayer.addChatMessage(new ChatComponentText(
                     EnumChatFormatting.GRAY + "[" + EnumChatFormatting.AQUA + "BWT" + EnumChatFormatting.GRAY + "] "
                             + EnumChatFormatting.RED + "\u26a0 " + EnumChatFormatting.RESET
-                            + stats.getThreatLine(this)
+                            + stats.getThreatLine(this, getTeamColoredName(stats.getPlayerName()))
             ));
         }
+    }
+
+    private String getTeamColoredName(String playerName) {
+        if (minecraft.theWorld == null || playerName == null) {
+            return playerName;
+        }
+
+        ScorePlayerTeam team = minecraft.theWorld.getScoreboard().getPlayersTeam(playerName);
+        if (team == null) {
+            return playerName;
+        }
+        return ScorePlayerTeam.formatPlayerName(team, playerName);
     }
 
     private boolean isBedwarsStartMessage(String message) {
         return message.contains("Protect your bed and destroy the enemy beds.")
                 && !message.contains(":")
                 && !message.contains("SHOUT");
+    }
+
+    private boolean isLobbyOrServerTransferMessage(String message) {
+        return message.contains("joined the lobby!")
+                || message.startsWith("Sending you to ")
+                || message.contains("You are currently connected to server");
     }
 
     private List<String> parseOnlinePlayers(String message) {

@@ -17,6 +17,8 @@ import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.opengl.GL11;
 
 public class NametagsStats extends Feature implements BedwarsStatsService.TagVisibility {
+    private static NametagsStats instance;
+
     private final Minecraft minecraft = Minecraft.getMinecraft();
     private final BooleanSetting showSuspiciousName = new BooleanSetting("Show N Tag", true);
     private final BooleanSetting showLowStarWinstreak = new BooleanSetting("Show W Tag", true);
@@ -25,10 +27,12 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
     private final BooleanSetting showZeroFinals = new BooleanSetting("Show 0F Tag", true);
     private final BooleanSetting useUrchinTags = new BooleanSetting("Use Urchin Tags", false);
     private final BooleanSetting showUrchinTags = new BooleanSetting("Show Urchin Tags", true);
+    private final StringSetting hypixelApiKey = new StringSetting("Hypixel API Key", "");
     private final StringSetting urchinKey = new StringSetting("Urchin API Key", "");
 
     public NametagsStats() {
         super(FeatureCategory.RENDER);
+        instance = this;
         registerSetting(showSuspiciousName);
         registerSetting(showLowStarWinstreak);
         registerSetting(showLowStarFkdr);
@@ -36,6 +40,7 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
         registerSetting(showZeroFinals);
         registerSetting(useUrchinTags);
         registerSetting(showUrchinTags);
+        registerSetting(hypixelApiKey);
         registerSetting(urchinKey);
     }
 
@@ -46,7 +51,10 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
 
     @Subscribe
     public void onRenderNameTag(RenderNameTagEvent event) {
-        if (!isEnabled() || minecraft.thePlayer == null || event.getPlayer() == minecraft.thePlayer) {
+        if (!isEnabled()
+                || !BedwarsStatsService.isBedwarsGameActive()
+                || minecraft.thePlayer == null
+                || event.getPlayer() == minecraft.thePlayer) {
             return;
         }
         syncUrchinConfig();
@@ -64,7 +72,7 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
             text += EnumChatFormatting.GRAY + " | " + tags;
         }
 
-        renderText(text, event.getX(), event.getY() + event.getPlayer().height + 0.8D, event.getZ());
+        renderText(text, event.getX(), event.getY() + event.getPlayer().height + 0.8D, event.getZ(), !event.getPlayer().isSneaking());
     }
 
     @Override
@@ -90,7 +98,22 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
         return true;
     }
 
+    public static void setHypixelApiKey(String key) {
+        if (instance == null) {
+            return;
+        }
+
+        instance.hypixelApiKey.setValue(key);
+        instance.syncStatsConfig();
+        BedwarsStatsService.clearCache();
+    }
+
     private void syncUrchinConfig() {
+        syncStatsConfig();
+    }
+
+    private void syncStatsConfig() {
+        BedwarsStatsService.configureHypixelApiKey("nametags_stats", hypixelApiKey.getValue());
         BedwarsStatsService.configureUrchin("nametags_stats", useUrchinTags.getValue(), urchinKey.getValue());
     }
 
@@ -102,7 +125,7 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
                 || type == BedwarsTagType.URCHIN_OTHER;
     }
 
-    private void renderText(String text, double x, double y, double z) {
+    private void renderText(String text, double x, double y, double z, boolean seeThrough) {
         RenderManager renderManager = minecraft.getRenderManager();
         FontRenderer fontRenderer = minecraft.fontRendererObj;
         float scale = 0.02666667F;
@@ -114,7 +137,9 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
         GlStateManager.rotate(renderManager.playerViewX, 1.0F, 0.0F, 0.0F);
         GlStateManager.scale(-scale, -scale, scale);
         GlStateManager.disableLighting();
-        GlStateManager.disableDepth();
+        if (seeThrough) {
+            GlStateManager.disableDepth();
+        }
         GlStateManager.depthMask(false);
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
@@ -123,7 +148,9 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
 
         GlStateManager.disableBlend();
         GlStateManager.depthMask(true);
-        GlStateManager.enableDepth();
+        if (seeThrough) {
+            GlStateManager.enableDepth();
+        }
         GlStateManager.enableLighting();
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.popMatrix();

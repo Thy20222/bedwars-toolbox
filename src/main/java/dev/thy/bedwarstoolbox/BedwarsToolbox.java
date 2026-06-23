@@ -1,6 +1,7 @@
 package dev.thy.bedwarstoolbox;
 
 import dev.thy.bedwarstoolbox.core.feature.FeatureManager;
+import dev.thy.bedwarstoolbox.core.command.HypixelCommand;
 import dev.thy.bedwarstoolbox.core.command.UrchinCommand;
 import dev.thy.bedwarstoolbox.core.config.SettingManager;
 import dev.thy.bedwarstoolbox.core.event.BlockHighlightEvent;
@@ -10,6 +11,7 @@ import dev.thy.bedwarstoolbox.core.event.Render2DEvent;
 import dev.thy.bedwarstoolbox.core.event.Render3DEvent;
 import dev.thy.bedwarstoolbox.core.event.RenderNameTagEvent;
 import dev.thy.bedwarstoolbox.core.gui.GuiManager;
+import dev.thy.bedwarstoolbox.core.stats.BedwarsStatsService;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
@@ -18,6 +20,7 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -42,6 +45,7 @@ public class BedwarsToolbox {
         guiManager = new GuiManager(featureManager, settingManager);
         settingManager.load();
         guiManager.registerKeyBindings();
+        ClientCommandHandler.instance.registerCommand(new HypixelCommand());
         ClientCommandHandler.instance.registerCommand(new UrchinCommand());
 
         MinecraftForge.EVENT_BUS.register(this);
@@ -102,6 +106,11 @@ public class BedwarsToolbox {
         if (event.entity instanceof AbstractClientPlayer) {
             eventBus.post(new RenderNameTagEvent((AbstractClientPlayer) event.entity, event.x, event.y, event.z));
         }
+    }
+
+    @SubscribeEvent
+    public void onWorldLoad(WorldEvent.Load event) {
+        BedwarsStatsService.setBedwarsGameActive(false);
     }
 
     @SubscribeEvent
