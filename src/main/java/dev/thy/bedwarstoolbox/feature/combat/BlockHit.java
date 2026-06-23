@@ -2,6 +2,7 @@ package dev.thy.bedwarstoolbox.feature.combat;
 
 import dev.thy.bedwarstoolbox.core.config.BooleanSetting;
 import dev.thy.bedwarstoolbox.core.config.NumberSetting;
+import dev.thy.bedwarstoolbox.core.animation.BlockHitAnimationState;
 import dev.thy.bedwarstoolbox.core.feature.Feature;
 import dev.thy.bedwarstoolbox.core.feature.FeatureCategory;
 import net.minecraft.client.Minecraft;

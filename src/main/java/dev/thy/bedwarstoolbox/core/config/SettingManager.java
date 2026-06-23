@@ -256,6 +256,8 @@ public class SettingManager {
                 ((ColorSetting) setting).setValue(valueElement.getAsInt());
             } else if (setting instanceof KeybindSetting) {
                 ((KeybindSetting) setting).setKeyCode(valueElement.getAsInt());
+            } else if (setting instanceof StringSetting) {
+                ((StringSetting) setting).setValue(valueElement.getAsString());
             }
         } catch (RuntimeException ignored) {
         }

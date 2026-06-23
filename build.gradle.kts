@@ -91,6 +91,22 @@ tasks.compileJava {
     options.encoding = "UTF-8"
 }
 
+fun org.gradle.api.java.archives.Manifest.configureForgeMixinAttributes() {
+    attributes(
+        mapOf(
+            "FMLCorePluginContainsFMLMod" to "true",
+            "ForceLoadAsMod" to "true",
+            "TweakClass" to "org.spongepowered.asm.launch.MixinTweaker",
+            "TweakOrder" to "0",
+            "MixinConfigs" to "mixins.$modid.json"
+        )
+    )
+
+    if (transformerFile.exists()) {
+        attributes["FMLAT"] = "${modid}_at.cfg"
+    }
+}
+
 
 tasks.withType(JavaExec::class).configureEach {
     if (name == "runClient") {
@@ -107,18 +123,7 @@ tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
     archiveBaseName.set(modid)
 
     manifest {
-        attributes(
-            mapOf(
-                "FMLCorePluginContainsFMLMod" to "true",
-                "ForceLoadAsMod" to "true",
-                "TweakClass" to "org.spongepowered.asm.launch.MixinTweaker",
-                "MixinConfigs" to "mixins.$modid.json"
-            )
-        )
-    }
-
-    if (transformerFile.exists()) {
-        manifest.attributes["FMLAT"] = "${modid}_at.cfg"
+        configureForgeMixinAttributes()
     }
 }
 
@@ -145,6 +150,9 @@ val remapJar by tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
 tasks.jar {
     archiveClassifier.set("without-deps")
     destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
+    manifest {
+        configureForgeMixinAttributes()
+    }
 }
 
 tasks.shadowJar {
@@ -152,8 +160,17 @@ tasks.shadowJar {
     archiveClassifier.set("non-obfuscated-with-deps")
     configurations = listOf(shadowImpl)
 
+    manifest {
+        configureForgeMixinAttributes()
+    }
+
     from("LICENSE") {
         rename { "LICENSE_${modid}" }
+    }
+
+    // MIT LICENSE from the mod, statsify (project name is Fontaine), made by xanning
+    from("LICENSE_statsify") {
+        rename { "LICENSE_statsify" }
     }
 
     doLast {

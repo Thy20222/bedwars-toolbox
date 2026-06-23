@@ -1,7 +1,7 @@
 {
   "package": "dev.thy.bedwarstoolbox.mixin",
   "plugin": "dev.thy.bedwarstoolbox.init.AutoDiscoveryMixinPlugin",
-  "refmap": "mixins.${modid}.refmap.json",
+  "refmap": "mixins.bedwarstoolbox.refmap.json",
   "minVersion": "0.7",
   "compatibilityLevel": "JAVA_8"
 }

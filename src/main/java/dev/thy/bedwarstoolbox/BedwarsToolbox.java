@@ -1,14 +1,21 @@
 package dev.thy.bedwarstoolbox;
 
 import dev.thy.bedwarstoolbox.core.feature.FeatureManager;
+import dev.thy.bedwarstoolbox.core.command.UrchinCommand;
 import dev.thy.bedwarstoolbox.core.config.SettingManager;
 import dev.thy.bedwarstoolbox.core.event.BlockHighlightEvent;
+import dev.thy.bedwarstoolbox.core.event.ChatReceivedEvent;
 import dev.thy.bedwarstoolbox.core.event.EventBus;
 import dev.thy.bedwarstoolbox.core.event.Render2DEvent;
 import dev.thy.bedwarstoolbox.core.event.Render3DEvent;
+import dev.thy.bedwarstoolbox.core.event.RenderNameTagEvent;
 import dev.thy.bedwarstoolbox.core.gui.GuiManager;
+import net.minecraft.client.entity.AbstractClientPlayer;
+import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -35,6 +42,7 @@ public class BedwarsToolbox {
         guiManager = new GuiManager(featureManager, settingManager);
         settingManager.load();
         guiManager.registerKeyBindings();
+        ClientCommandHandler.instance.registerCommand(new UrchinCommand());
 
         MinecraftForge.EVENT_BUS.register(this);
         FMLCommonHandler.instance().bus().register(this);
@@ -81,6 +89,18 @@ public class BedwarsToolbox {
         BlockHighlightEvent toolboxEvent = eventBus.post(new BlockHighlightEvent());
         if (toolboxEvent.isCancelled()) {
             event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public void onClientChatReceived(ClientChatReceivedEvent event) {
+        eventBus.post(new ChatReceivedEvent(event.message));
+    }
+
+    @SubscribeEvent
+    public void onRenderLivingSpecials(RenderLivingEvent.Specials.Post event) {
+        if (event.entity instanceof AbstractClientPlayer) {
+            eventBus.post(new RenderNameTagEvent((AbstractClientPlayer) event.entity, event.x, event.y, event.z));
         }
     }
 

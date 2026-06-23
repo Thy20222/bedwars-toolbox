@@ -1,7 +1,7 @@
 package dev.thy.bedwarstoolbox.mixin;
 
 import dev.thy.bedwarstoolbox.feature.combat.BlockHit;
-import dev.thy.bedwarstoolbox.feature.combat.BlockHitAnimationState;
+import dev.thy.bedwarstoolbox.core.animation.BlockHitAnimationState;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.util.MathHelper;
