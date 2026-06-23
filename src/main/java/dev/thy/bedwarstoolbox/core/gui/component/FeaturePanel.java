@@ -26,10 +26,10 @@ public class FeaturePanel extends GuiComponent {
     private static final int SPACING = 4;
     private static final float TEXT_SCALE = 0.92F;
     private static final int NUMBER_SLIDER_EXTENSION = 8;
+    private static final Map<Feature, Boolean> COLLAPSED_FEATURES = new IdentityHashMap<>();
 
     private final GuiManager guiManager;
     private final FeatureManager featureManager;
-    private final Map<Feature, Boolean> collapsedFeatures = new IdentityHashMap<>();
     private final Map<ColorSetting, Boolean> collapsedColorSettings = new IdentityHashMap<>();
     private FeatureCategory activeCategory;
     private ColorSetting draggingColorSetting;
@@ -390,12 +390,13 @@ public class FeaturePanel extends GuiComponent {
     }
 
     private boolean isFeatureCollapsed(Feature feature) {
-        return Boolean.TRUE.equals(collapsedFeatures.get(feature));
+        Boolean collapsed = COLLAPSED_FEATURES.get(feature);
+        return collapsed == null || collapsed;
     }
 
     private void toggleFeatureCollapsed(Feature feature) {
         boolean collapsed = !isFeatureCollapsed(feature);
-        collapsedFeatures.put(feature, collapsed);
+        COLLAPSED_FEATURES.put(feature, collapsed);
         if (collapsed) {
             draggingColorSetting = null;
             draggingColorChannel = -1;

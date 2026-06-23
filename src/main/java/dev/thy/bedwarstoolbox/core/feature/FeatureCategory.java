@@ -2,7 +2,8 @@ package dev.thy.bedwarstoolbox.core.feature;
 
 public enum FeatureCategory {
     COMBAT("Combat"),
-    RENDER("Render");
+    RENDER("Render"),
+    MISC("Misc");
 
     private final String displayName;
 

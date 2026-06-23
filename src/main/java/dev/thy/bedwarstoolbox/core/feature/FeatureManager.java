@@ -8,6 +8,7 @@ import dev.thy.bedwarstoolbox.core.event.Subscribe;
 import dev.thy.bedwarstoolbox.core.event.TickEvent;
 import dev.thy.bedwarstoolbox.feature.combat.BlockHit;
 import dev.thy.bedwarstoolbox.feature.combat.HitFX;
+import dev.thy.bedwarstoolbox.feature.misc.SneakFix;
 import dev.thy.bedwarstoolbox.feature.render.BedwarsOverlay;
 import dev.thy.bedwarstoolbox.feature.render.BlockOverlay;
 import dev.thy.bedwarstoolbox.feature.render.FullBright;
@@ -39,6 +40,7 @@ public class FeatureManager {
         register(new BlockHit());
         register(new HitFX());
         register(new TNTTimer());
+        register(new SneakFix());
     }
 
     public List<Feature> getFeatures() {

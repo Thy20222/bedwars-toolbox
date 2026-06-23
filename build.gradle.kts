@@ -82,6 +82,7 @@ dependencies {
     shadowImpl("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
         isTransitive = false
     }
+    shadowImpl("net.java.dev.jna:jna:5.14.0")
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
 }
 
@@ -118,15 +119,6 @@ tasks.withType(JavaExec::class).configureEach {
     }
 }
 
-tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
-
-    archiveBaseName.set(modid)
-
-    manifest {
-        configureForgeMixinAttributes()
-    }
-}
-
 tasks.processResources {
     inputs.property("version", project.version)
     inputs.property("mcversion", mcVersion)
@@ -141,10 +133,17 @@ tasks.processResources {
 }
 
 
-val remapJar by tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
+tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
+    dependsOn(tasks.shadowJar)
+
+    archiveBaseName.set(modid)
     archiveClassifier.set("")
-    from(tasks.shadowJar)
+
     input.set(tasks.shadowJar.get().archiveFile)
+
+    manifest {
+        configureForgeMixinAttributes()
+    }
 }
 
 tasks.jar {
