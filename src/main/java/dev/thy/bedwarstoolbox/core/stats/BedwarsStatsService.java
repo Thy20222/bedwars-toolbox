@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 public final class BedwarsStatsService {
     private static final Minecraft MINECRAFT = Minecraft.getMinecraft();
     private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(6);
-    private static final Map<String, BedwarsStats> CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, CacheEntry> CACHE = new ConcurrentHashMap<>();
     private static final Map<String, Long> FAILED_UNTIL = new ConcurrentHashMap<>();
     private static final Set<String> BEDWARS_PLAYERS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static final Set<String> IN_FLIGHT = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -39,22 +39,26 @@ public final class BedwarsStatsService {
     private static final String[] URCHIN_KEY_PRIORITY = {"nametags_stats", "bedwars_overlay", "default"};
     private static final String[] HYPIXEL_KEY_PRIORITY = {"nametags_stats", "bedwars_overlay", "default"};
     private static final long FAILURE_RETRY_DELAY_MS = 5L * 60L * 1000L;
+    private static final long CACHE_TTL_MS = 10L * 60L * 1000L;
+    private static final long CACHE_PRUNE_INTERVAL_MS = 30L * 1000L;
     private static volatile boolean urchinEnabled;
     private static volatile String urchinKey = "";
     private static volatile String hypixelKey = "";
     private static volatile boolean bedwarsGameActive;
     private static volatile boolean retryFailedLookups;
+    private static volatile long lastCachePruneAt;
 
     private BedwarsStatsService() {
     }
 
     public static BedwarsStats get(String playerName) {
+        pruneExpiredCacheIfNeeded();
         String key = normalize(playerName);
         if (bedwarsGameActive && !isBedwarsPlayer(key)) {
             return null;
         }
 
-        return CACHE.get(key);
+        return getCached(key);
     }
 
     public static boolean isBedwarsGameActive() {
@@ -70,6 +74,7 @@ public final class BedwarsStatsService {
         if (!active) {
             IN_FLIGHT.clear();
             BEDWARS_PLAYERS.clear();
+            pruneExpiredCache();
         }
     }
 
@@ -150,6 +155,7 @@ public final class BedwarsStatsService {
     }
 
     public static void request(String playerName, StatsCallback callback) {
+        pruneExpiredCacheIfNeeded();
         if (!bedwarsGameActive) {
             return;
         }
@@ -159,7 +165,7 @@ public final class BedwarsStatsService {
             return;
         }
 
-        BedwarsStats cached = CACHE.get(key);
+        BedwarsStats cached = getCached(key);
         if (cached != null) {
             if (callback != null) {
                 callback.onLoaded(cached);
@@ -182,7 +188,7 @@ public final class BedwarsStatsService {
                     return;
                 }
 
-                CACHE.put(key, stats);
+                putCached(key, stats);
                 if (callback != null) {
                     MINECRAFT.addScheduledTask(() -> callback.onLoaded(stats));
                 }
@@ -202,12 +208,13 @@ public final class BedwarsStatsService {
     }
 
     public static String getTabSuffix(String playerName, TagVisibility visibility) {
+        pruneExpiredCacheIfNeeded();
         String key = normalize(playerName);
         if (!bedwarsGameActive || !isBedwarsPlayer(key)) {
             return null;
         }
 
-        BedwarsStats stats = CACHE.get(key);
+        BedwarsStats stats = getCached(key);
         if (stats == null) {
             request(playerName);
             return null;
@@ -479,6 +486,42 @@ public final class BedwarsStatsService {
         return playerName == null ? "" : playerName.toLowerCase();
     }
 
+    private static BedwarsStats getCached(String key) {
+        CacheEntry entry = CACHE.get(key);
+        return entry == null ? null : entry.getStats();
+    }
+
+    private static void putCached(String key, BedwarsStats stats) {
+        CACHE.put(key, new CacheEntry(stats, System.currentTimeMillis()));
+    }
+
+    public static void pruneExpiredCacheIfNeeded() {
+        if (bedwarsGameActive) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - lastCachePruneAt < CACHE_PRUNE_INTERVAL_MS) {
+            return;
+        }
+
+        lastCachePruneAt = now;
+        pruneExpiredCache();
+    }
+
+    private static void pruneExpiredCache() {
+        if (bedwarsGameActive) {
+            return;
+        }
+
+        long expiresBefore = System.currentTimeMillis() - CACHE_TTL_MS;
+        for (Entry<String, CacheEntry> entry : CACHE.entrySet()) {
+            if (entry.getValue().getLoadedAt() <= expiresBefore) {
+                CACHE.remove(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
     public static boolean isSelfPlayer(String playerName) {
         if (playerName == null || MINECRAFT.thePlayer == null || MINECRAFT.thePlayer.getGameProfile() == null) {
             return false;
@@ -551,6 +594,24 @@ public final class BedwarsStatsService {
     private static final class MissingHypixelKeyException extends IOException {
         private MissingHypixelKeyException() {
             super("Hypixel API key missing");
+        }
+    }
+
+    private static final class CacheEntry {
+        private final BedwarsStats stats;
+        private final long loadedAt;
+
+        private CacheEntry(BedwarsStats stats, long loadedAt) {
+            this.stats = stats;
+            this.loadedAt = loadedAt;
+        }
+
+        private BedwarsStats getStats() {
+            return stats;
+        }
+
+        private long getLoadedAt() {
+            return loadedAt;
         }
     }
 
