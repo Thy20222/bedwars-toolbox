@@ -31,7 +31,7 @@ Users are responsible for ensuring that their use of this mod complies with all 
 
 ## License
 
-Copyright (c) 2026 Thy20222
+Copyright (c) 2026 Thy20222  
 All rights reserved.
 
 This software and associated documentation files (the "Software") are proprietary to Thy20222.
