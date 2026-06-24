@@ -6,14 +6,15 @@ A utility mod for Minecraft Forge 1.8.9 focused on enhancing the Hypixel BedWars
 
 Current and planned features include:
 
-* TNT countdown timer
-* Invisibility footprint indicators
+* BlockHit animations
 * Sharpness particle indicators
-* BedWars star display
-* Generator timer HUD
-* Block highlight overlays
+* Input fix for sneaking
 * Player statistics overlays
-* Additional quality-of-life improvements
+* Block highlight overlays
+* Full bright
+* BedWars star/stats nametags display
+* Generator timer HUD
+* TNT countdown timer
 
 ## Installation
 
