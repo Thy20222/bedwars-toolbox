@@ -14,6 +14,8 @@ import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.Vec3;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,8 +27,8 @@ public class ResourceTimer extends Feature implements Global {
     private final ColorSetting diamondColor = new ColorSetting("Diamond Color", 185, 242, 255, 255);
     private final ColorSetting emeraldColor = new ColorSetting("Emerald Color", 80, 200, 120, 255);
 
-    private Vec3 diamondPos = null;
-    private Vec3 emeraldPos = null;
+    private final List<Vec3> diamondPositions = new ArrayList<>();
+    private final List<Vec3> emeraldPositions = new ArrayList<>();
     private String diamondTime = "";
     private String emeraldTime = "";
     private int tickCounter = 0;
@@ -76,8 +78,10 @@ public class ResourceTimer extends Feature implements Global {
             return;
         }
 
-        updateResourceTimer(true);
-        updateResourceTimer(false);
+        discoverResourceMatches("Diamond", diamondPositions);
+        discoverResourceMatches("Emerald", emeraldPositions);
+        updateNearestResourceTimer(true);
+        updateNearestResourceTimer(false);
     }
 
     @Subscribe
@@ -94,19 +98,10 @@ public class ResourceTimer extends Feature implements Global {
         font.drawStringWithShadow("Emerald: " + formatTime(emeraldTime), x, y + font.FONT_HEIGHT + 2, emeraldColor.toArgb());
     }
 
-    private void updateResourceTimer(boolean diamond) {
-        Vec3 resourcePos = diamond ? diamondPos : emeraldPos;
-        String resourceName = diamond ? "Diamond" : "Emerald";
-
+    private void updateNearestResourceTimer(boolean diamond) {
+        Vec3 resourcePos = findNearestPosition(diamond ? diamondPositions : emeraldPositions);
         if (resourcePos == null) {
-            ResourceMatch match = findResourceMatch(resourceName);
-            if (match == null) {
-                setTime(diamond, "");
-                return;
-            }
-
-            setPosition(diamond, match.position);
-            setTime(diamond, match.time);
+            setTime(diamond, "");
             return;
         }
 
@@ -114,7 +109,7 @@ public class ResourceTimer extends Feature implements Global {
         setTime(diamond, time == null ? "" : time);
     }
 
-    private ResourceMatch findResourceMatch(String resourceName) {
+    private void discoverResourceMatches(String resourceName, List<Vec3> positions) {
         for (Entity entity : mc.theWorld.loadedEntityList) {
             if (!(entity instanceof EntityArmorStand)) {
                 continue;
@@ -128,11 +123,43 @@ public class ResourceTimer extends Feature implements Global {
             Vec3 position = entity.getPositionVector();
             String time = findSpawnTimeNear(position);
             if (time != null) {
-                return new ResourceMatch(position, time);
+                addPositionIfNew(positions, position);
+            }
+        }
+    }
+
+    private void addPositionIfNew(List<Vec3> positions, Vec3 position) {
+        for (Vec3 existing : positions) {
+            if (isSameResourcePosition(existing, position)) {
+                return;
             }
         }
 
-        return null;
+        positions.add(position);
+    }
+
+    private boolean isSameResourcePosition(Vec3 first, Vec3 second) {
+        return Math.abs(first.xCoord - second.xCoord) <= 0.25D
+                && Math.abs(first.yCoord - second.yCoord) <= 0.25D
+                && Math.abs(first.zCoord - second.zCoord) <= 0.25D;
+    }
+
+    private Vec3 findNearestPosition(List<Vec3> positions) {
+        if (mc.thePlayer == null) {
+            return null;
+        }
+
+        Vec3 nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (Vec3 position : positions) {
+            double distance = mc.thePlayer.getDistanceSq(position.xCoord, position.yCoord, position.zCoord);
+            if (distance < nearestDistance) {
+                nearest = position;
+                nearestDistance = distance;
+            }
+        }
+
+        return nearest;
     }
 
     private String findSpawnTimeNear(Vec3 position) {
@@ -169,14 +196,6 @@ public class ResourceTimer extends Feature implements Global {
         return EnumChatFormatting.getTextWithoutFormattingCodes(stand.getCustomNameTag());
     }
 
-    private void setPosition(boolean diamond, Vec3 position) {
-        if (diamond) {
-            diamondPos = position;
-        } else {
-            emeraldPos = position;
-        }
-    }
-
     private void setTime(boolean diamond, String time) {
         if (diamond) {
             diamondTime = time;
@@ -190,8 +209,8 @@ public class ResourceTimer extends Feature implements Global {
     }
 
     private void clearCache() {
-        diamondPos = null;
-        emeraldPos = null;
+        diamondPositions.clear();
+        emeraldPositions.clear();
         diamondTime = "";
         emeraldTime = "";
         tickCounter = 0;
@@ -211,15 +230,5 @@ public class ResourceTimer extends Feature implements Global {
 
     public static void setBedwarsGameActive(boolean active) {
         ResourceTimer.active = active;
-    }
-
-    private static class ResourceMatch {
-        private final Vec3 position;
-        private final String time;
-
-        private ResourceMatch(Vec3 position, String time) {
-            this.position = position;
-            this.time = time;
-        }
     }
 }
