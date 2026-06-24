@@ -1,5 +1,6 @@
 package dev.thy.bedwarstoolbox.feature.combat;
 
+import dev.thy.bedwarstoolbox.core.Global;
 import dev.thy.bedwarstoolbox.core.event.AttackEntityEvent;
 import dev.thy.bedwarstoolbox.core.event.Subscribe;
 import dev.thy.bedwarstoolbox.core.feature.Feature;
@@ -7,7 +8,7 @@ import dev.thy.bedwarstoolbox.core.feature.FeatureCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumParticleTypes;
 
-public class HitFX extends Feature {
+public class HitFX extends Feature implements Global {
     private final Minecraft minecraft = Minecraft.getMinecraft();
 
     public HitFX() {
@@ -16,11 +17,11 @@ public class HitFX extends Feature {
 
     @Subscribe
     public void onAttackEntity(AttackEntityEvent event) {
-        if (!isEnabled() || minecraft.theWorld == null || minecraft.thePlayer == null) {
+        if (!isEnabled() || minecraft.theWorld == null || mc.thePlayer == null) {
             return;
         }
 
-        if (event.getAttacker() != minecraft.thePlayer || event.getTarget() == null) {
+        if (event.getAttacker() != mc.thePlayer || event.getTarget() == null) {
             return;
         }
 

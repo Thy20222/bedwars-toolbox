@@ -12,6 +12,7 @@ import dev.thy.bedwarstoolbox.core.event.Render3DEvent;
 import dev.thy.bedwarstoolbox.core.event.RenderNameTagEvent;
 import dev.thy.bedwarstoolbox.core.gui.GuiManager;
 import dev.thy.bedwarstoolbox.core.stats.BedwarsStatsService;
+import dev.thy.bedwarstoolbox.feature.render.ResourceTimer;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
@@ -112,6 +113,7 @@ public class BedwarsToolbox {
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event) {
         BedwarsStatsService.setBedwarsGameActive(false);
+        ResourceTimer.setBedwarsGameActive(false);
     }
 
     @SubscribeEvent

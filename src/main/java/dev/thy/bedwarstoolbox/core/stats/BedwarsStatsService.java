@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.Minecraft;
+import dev.thy.bedwarstoolbox.core.Global;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
@@ -27,8 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
-public final class BedwarsStatsService {
-    private static final Minecraft MINECRAFT = Minecraft.getMinecraft();
+public final class BedwarsStatsService implements Global {
     private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(6);
     private static final Map<String, CacheEntry> CACHE = new ConcurrentHashMap<>();
     private static final Map<String, Long> FAILED_UNTIL = new ConcurrentHashMap<>();
@@ -190,7 +189,7 @@ public final class BedwarsStatsService {
 
                 putCached(key, stats);
                 if (callback != null) {
-                    MINECRAFT.addScheduledTask(() -> callback.onLoaded(stats));
+                    mc.addScheduledTask(() -> callback.onLoaded(stats));
                 }
             } catch (Exception exception) {
                 markFailure(key);
@@ -334,11 +333,11 @@ public final class BedwarsStatsService {
     }
 
     private static String getUUIDFromTab(String playerName) {
-        if (MINECRAFT.getNetHandler() == null) {
+        if (mc.getNetHandler() == null) {
             return null;
         }
 
-        for (NetworkPlayerInfo info : MINECRAFT.getNetHandler().getPlayerInfoMap()) {
+        for (NetworkPlayerInfo info : mc.getNetHandler().getPlayerInfoMap()) {
             if (info.getGameProfile().getName().equalsIgnoreCase(playerName)) {
                 return String.valueOf(info.getGameProfile().getId());
             }
@@ -523,11 +522,11 @@ public final class BedwarsStatsService {
     }
 
     public static boolean isSelfPlayer(String playerName) {
-        if (playerName == null || MINECRAFT.thePlayer == null || MINECRAFT.thePlayer.getGameProfile() == null) {
+        if (playerName == null || mc.thePlayer == null || mc.thePlayer.getGameProfile() == null) {
             return false;
         }
 
-        return playerName.equalsIgnoreCase(MINECRAFT.thePlayer.getGameProfile().getName());
+        return playerName.equalsIgnoreCase(mc.thePlayer.getGameProfile().getName());
     }
 
     private static boolean isBedwarsPlayer(String key) {
@@ -581,9 +580,9 @@ public final class BedwarsStatsService {
         String message = exception instanceof MissingHypixelKeyException
                 ? "Set a Hypixel API key with /bwthypixel <key> to show Bedwars stats."
                 : "Bedwars stats lookup failed: " + exception.getMessage();
-        MINECRAFT.addScheduledTask(() -> {
-            if (MINECRAFT.thePlayer != null) {
-                MINECRAFT.thePlayer.addChatMessage(new ChatComponentText(
+        mc.addScheduledTask(() -> {
+            if (mc.thePlayer != null) {
+                mc.thePlayer.addChatMessage(new ChatComponentText(
                         EnumChatFormatting.GRAY + "[" + EnumChatFormatting.AQUA + "BWT" + EnumChatFormatting.GRAY + "] "
                                 + EnumChatFormatting.YELLOW + message
                 ));

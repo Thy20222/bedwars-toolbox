@@ -3,16 +3,16 @@ package dev.thy.bedwarstoolbox.feature.combat;
 import dev.thy.bedwarstoolbox.core.config.BooleanSetting;
 import dev.thy.bedwarstoolbox.core.config.NumberSetting;
 import dev.thy.bedwarstoolbox.core.animation.BlockHitAnimationState;
+import dev.thy.bedwarstoolbox.core.Global;
 import dev.thy.bedwarstoolbox.core.feature.Feature;
 import dev.thy.bedwarstoolbox.core.feature.FeatureCategory;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 import org.lwjgl.input.Mouse;
 
-public class BlockHit extends Feature {
+public class BlockHit extends Feature implements Global {
     private static BlockHit instance;
 
     private final BooleanSetting blockHitAnimation = new BooleanSetting("BlockHit Animation", true);
@@ -122,20 +122,17 @@ public class BlockHit extends Feature {
     }
 
     private static boolean isUsingItem() {
-        Minecraft minecraft = Minecraft.getMinecraft();
-        EntityPlayer player = minecraft.thePlayer;
+        EntityPlayer player = mc.thePlayer;
         return player != null && player.isUsingItem();
     }
 
     private static boolean isLookingAtBlock() {
-        Minecraft minecraft = Minecraft.getMinecraft();
-        return minecraft.objectMouseOver != null
-                && minecraft.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK;
+        return mc.objectMouseOver != null
+                && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK;
     }
 
     private static boolean isBlocking() {
-        Minecraft minecraft = Minecraft.getMinecraft();
-        EntityPlayer player = minecraft.thePlayer;
+        EntityPlayer player = mc.thePlayer;
         if (player == null || !player.isUsingItem()) {
             return false;
         }

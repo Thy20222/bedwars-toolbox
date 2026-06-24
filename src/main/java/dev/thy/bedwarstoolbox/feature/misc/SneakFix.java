@@ -3,11 +3,12 @@ package dev.thy.bedwarstoolbox.feature.misc;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import dev.thy.bedwarstoolbox.core.Global;
 import dev.thy.bedwarstoolbox.core.feature.Feature;
 import dev.thy.bedwarstoolbox.core.feature.FeatureCategory;
 import net.minecraft.client.Minecraft;
 
-public class SneakFix extends Feature {
+public class SneakFix extends Feature implements Global {
     private final Minecraft minecraft = Minecraft.getMinecraft();
     private boolean unavailable;
 
@@ -23,7 +24,7 @@ public class SneakFix extends Feature {
         }
 
         try {
-            if (minecraft.thePlayer == null || minecraft.theWorld == null) {
+            if (mc.thePlayer == null || minecraft.theWorld == null) {
                 WindowsInputMethod.restoreIme();
                 return;
             }

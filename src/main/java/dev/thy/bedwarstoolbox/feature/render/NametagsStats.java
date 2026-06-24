@@ -4,6 +4,7 @@ import dev.thy.bedwarstoolbox.core.config.BooleanSetting;
 import dev.thy.bedwarstoolbox.core.config.StringSetting;
 import dev.thy.bedwarstoolbox.core.event.RenderNameTagEvent;
 import dev.thy.bedwarstoolbox.core.event.Subscribe;
+import dev.thy.bedwarstoolbox.core.Global;
 import dev.thy.bedwarstoolbox.core.feature.Feature;
 import dev.thy.bedwarstoolbox.core.feature.FeatureCategory;
 import dev.thy.bedwarstoolbox.core.stats.BedwarsStatsService;
@@ -16,10 +17,11 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.opengl.GL11;
 
-public class NametagsStats extends Feature implements BedwarsStatsService.TagVisibility {
+public class NametagsStats extends Feature implements Global, BedwarsStatsService.TagVisibility {
     private static NametagsStats instance;
 
     private final Minecraft minecraft = Minecraft.getMinecraft();
+    private final BooleanSetting autoWho = new BooleanSetting("Auto Who", true);
     private final BooleanSetting showSuspiciousName = new BooleanSetting("Show N Tag", true);
     private final BooleanSetting showLowStarWinstreak = new BooleanSetting("Show W Tag", true);
     private final BooleanSetting showLowStarFkdr = new BooleanSetting("Show F Tag", true);
@@ -33,6 +35,7 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
     public NametagsStats() {
         super(FeatureCategory.RENDER);
         instance = this;
+        registerSetting(autoWho);
         registerSetting(showSuspiciousName);
         registerSetting(showLowStarWinstreak);
         registerSetting(showLowStarFkdr);
@@ -53,8 +56,8 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
     public void onRenderNameTag(RenderNameTagEvent event) {
         if (!isEnabled()
                 || !BedwarsStatsService.isBedwarsGameActive()
-                || minecraft.thePlayer == null
-                || event.getPlayer() == minecraft.thePlayer) {
+                || mc.thePlayer == null
+                || event.getPlayer() == mc.thePlayer) {
             return;
         }
         syncUrchinConfig();
@@ -66,7 +69,7 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
             return;
         }
 
-        if (event.getPlayer().isInvisibleToPlayer(minecraft.thePlayer)) return;
+        if (event.getPlayer().isInvisibleToPlayer(mc.thePlayer)) return;
 
         String tags = stats.getVisibleTags(this);
         String text = stats.getFormattedStars();
@@ -108,6 +111,20 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
         instance.hypixelApiKey.setValue(key);
         instance.syncStatsConfig();
         BedwarsStatsService.clearCache();
+    }
+
+    public static boolean isActive() {
+        return instance != null && instance.isEnabled();
+    }
+
+    public static boolean shouldAutoWho() {
+        return instance != null && instance.autoWho.getValue();
+    }
+
+    public static void syncConfig() {
+        if (instance != null) {
+            instance.syncStatsConfig();
+        }
     }
 
     private void syncUrchinConfig() {
