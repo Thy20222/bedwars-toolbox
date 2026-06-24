@@ -66,6 +66,8 @@ public class NametagsStats extends Feature implements BedwarsStatsService.TagVis
             return;
         }
 
+        if (event.getPlayer().isInvisibleToPlayer(minecraft.thePlayer)) return;
+
         String tags = stats.getVisibleTags(this);
         String text = stats.getFormattedStars();
         if (!tags.isEmpty()) {
