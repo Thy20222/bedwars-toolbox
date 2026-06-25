@@ -221,13 +221,58 @@ public final class BedwarsStatsService implements Global {
 
         String tags = stats.getVisibleTags(visibility);
         if (!tags.isEmpty()) {
+            if (!stats.hasHypixelStats()) {
+                return tags;
+            }
             return tags + EnumChatFormatting.RESET + " " + stats.getFormattedFkdr();
         }
 
+        if (!stats.hasHypixelStats()) {
+            return null;
+        }
         return stats.getFormattedFkdr();
     }
 
     private static BedwarsStats fetch(String playerName) throws IOException {
+        HypixelStatsResult hypixelStats = null;
+        IOException hypixelFailure = null;
+        List<BedwarsTag> tags = new ArrayList<>();
+
+        try {
+            tags.addAll(buildNameTags(playerName));
+        } catch (RuntimeException ignored) {
+        }
+
+        try {
+            hypixelStats = fetchHypixelStats(playerName);
+            tags.addAll(buildHypixelTags(hypixelStats));
+        } catch (IOException | RuntimeException exception) {
+            hypixelFailure = exception instanceof IOException
+                    ? (IOException) exception
+                    : new IOException("Hypixel player data invalid", exception);
+        }
+
+        if (urchinEnabled && !urchinKey.isEmpty()) {
+            tags.addAll(fetchUrchinTags(playerName, urchinKey));
+        }
+
+        if (hypixelStats == null && tags.isEmpty()) {
+            throw hypixelFailure;
+        }
+
+        return new BedwarsStats(
+                playerName,
+                hypixelStats != null,
+                hypixelStats == null ? 0 : hypixelStats.getStars(),
+                hypixelStats == null ? 0.0D : hypixelStats.getFkdr(),
+                hypixelStats == null ? 0 : hypixelStats.getFinalKills(),
+                hypixelStats == null ? 0 : hypixelStats.getFinalDeaths(),
+                hypixelStats == null ? 0 : hypixelStats.getWinstreak(),
+                tags
+        );
+    }
+
+    private static HypixelStatsResult fetchHypixelStats(String playerName) throws IOException {
         String uuid = getUUIDFromTab(playerName);
         if (uuid == null || uuid.isEmpty()) {
             uuid = fetchUUID(playerName);
@@ -243,26 +288,39 @@ public final class BedwarsStatsService implements Global {
         JsonObject stats = getObject(player, "stats");
         JsonObject bedwars = getObject(stats, "Bedwars");
 
-        String name = getString(player, "displayname");
-        if (name == null || name.trim().isEmpty()) {
-            name = playerName;
-        }
         int stars = getInt(achievements, "bedwars_level");
         int finalKills = getInt(bedwars, "final_kills_bedwars");
         int finalDeaths = getInt(bedwars, "final_deaths_bedwars");
         int winstreak = getInt(bedwars, "winstreak");
         long firstLogin = getLong(player, "firstLogin");
         double fkdr = finalDeaths == 0 ? finalKills : finalKills / (double) finalDeaths;
-        List<BedwarsTag> tags = buildTags(name, stars, fkdr, winstreak, finalKills, finalDeaths, firstLogin);
-        if (urchinEnabled && !urchinKey.isEmpty()) {
-            tags.addAll(fetchUrchinTags(name, urchinKey));
-        }
-
-        return new BedwarsStats(playerName, stars, fkdr, finalKills, finalDeaths, winstreak, tags);
+        return new HypixelStatsResult(stars, fkdr, finalKills, finalDeaths, winstreak, firstLogin);
     }
 
-    private static List<BedwarsTag> buildTags(String name, int stars, double fkdr, int winstreak, int finalKills, int finalDeaths, long firstLogin) {
+    private static List<BedwarsTag> buildHypixelTags(HypixelStatsResult stats) {
         List<BedwarsTag> tags = new ArrayList<>();
+        if (stats.getStars() <= 6 && stats.getWinstreak() >= 1) {
+            tags.add(BedwarsTag.lowStarWinstreak());
+        }
+        if (stats.getStars() <= 6 && stats.getFkdr() >= 4.0D) {
+            tags.add(BedwarsTag.lowStarFkdr());
+        }
+        if (isNewLogin(stats.getFirstLogin())) {
+            tags.add(BedwarsTag.newLogin());
+        }
+        if (stats.getFinalKills() == 0 && stats.getFinalDeaths() == 0) {
+            tags.add(BedwarsTag.zeroFinals());
+        }
+
+        return tags;
+    }
+
+    private static List<BedwarsTag> buildNameTags(String name) {
+        List<BedwarsTag> tags = new ArrayList<>();
+        if (name == null) {
+            return tags;
+        }
+
         String lowerName = name.toLowerCase();
         String[] suspiciousWords = {
                 "msmc", "kikin", "g0ld", "fxrina_", "mal_", "fer_", "ly_", "tzi_", "verse_",
@@ -280,18 +338,6 @@ public final class BedwarsStatsService implements Global {
         if (!containsTag(tags, BedwarsTagType.SUSPICIOUS_NAME)
                 && Pattern.compile("\\d.*\\d.*\\d.*\\d").matcher(name).find()) {
             tags.add(BedwarsTag.suspiciousName());
-        }
-        if (stars <= 6 && winstreak >= 1) {
-            tags.add(BedwarsTag.lowStarWinstreak());
-        }
-        if (stars <= 6 && fkdr >= 4.0D) {
-            tags.add(BedwarsTag.lowStarFkdr());
-        }
-        if (isNewLogin(firstLogin)) {
-            tags.add(BedwarsTag.newLogin());
-        }
-        if (finalKills == 0 && finalDeaths == 0) {
-            tags.add(BedwarsTag.zeroFinals());
         }
 
         return tags;
@@ -596,6 +642,48 @@ public final class BedwarsStatsService implements Global {
         }
     }
 
+    private static final class HypixelStatsResult {
+        private final int stars;
+        private final double fkdr;
+        private final int finalKills;
+        private final int finalDeaths;
+        private final int winstreak;
+        private final long firstLogin;
+
+        private HypixelStatsResult(int stars, double fkdr, int finalKills, int finalDeaths, int winstreak, long firstLogin) {
+            this.stars = stars;
+            this.fkdr = fkdr;
+            this.finalKills = finalKills;
+            this.finalDeaths = finalDeaths;
+            this.winstreak = winstreak;
+            this.firstLogin = firstLogin;
+        }
+
+        private int getStars() {
+            return stars;
+        }
+
+        private double getFkdr() {
+            return fkdr;
+        }
+
+        private int getFinalKills() {
+            return finalKills;
+        }
+
+        private int getFinalDeaths() {
+            return finalDeaths;
+        }
+
+        private int getWinstreak() {
+            return winstreak;
+        }
+
+        private long getFirstLogin() {
+            return firstLogin;
+        }
+    }
+
     private static final class CacheEntry {
         private final BedwarsStats stats;
         private final long loadedAt;
@@ -696,6 +784,7 @@ public final class BedwarsStatsService implements Global {
 
     public static final class BedwarsStats {
         private final String playerName;
+        private final boolean hypixelStatsAvailable;
         private final int stars;
         private final double fkdr;
         private final int finalKills;
@@ -703,8 +792,9 @@ public final class BedwarsStatsService implements Global {
         private final int winstreak;
         private final List<BedwarsTag> tags;
 
-        private BedwarsStats(String playerName, int stars, double fkdr, int finalKills, int finalDeaths, int winstreak, List<BedwarsTag> tags) {
+        private BedwarsStats(String playerName, boolean hypixelStatsAvailable, int stars, double fkdr, int finalKills, int finalDeaths, int winstreak, List<BedwarsTag> tags) {
             this.playerName = playerName;
+            this.hypixelStatsAvailable = hypixelStatsAvailable;
             this.stars = stars;
             this.fkdr = fkdr;
             this.finalKills = finalKills;
@@ -717,6 +807,10 @@ public final class BedwarsStatsService implements Global {
             return playerName;
         }
 
+        public boolean hasHypixelStats() {
+            return hypixelStatsAvailable;
+        }
+
         public double getFkdr() {
             return fkdr;
         }
@@ -726,11 +820,19 @@ public final class BedwarsStatsService implements Global {
         }
 
         public String getFormattedFkdr() {
+            if (!hypixelStatsAvailable) {
+                return EnumChatFormatting.GRAY + "?";
+            }
+
             DecimalFormat format = new DecimalFormat("#.##");
             return getFkdrColor() + format.format(fkdr);
         }
 
         public String getFormattedStars() {
+            if (!hypixelStatsAvailable) {
+                return EnumChatFormatting.GRAY + "?\u272b";
+            }
+
             return formatStars(stars);
         }
 
@@ -757,6 +859,14 @@ public final class BedwarsStatsService implements Global {
 
         public String getThreatLine(TagVisibility visibility, String formattedPlayerName) {
             String tagsText = getVisibleTags(visibility);
+            if (!hypixelStatsAvailable) {
+                if (tagsText.isEmpty()) {
+                    return formattedPlayerName;
+                }
+                return formattedPlayerName + EnumChatFormatting.RESET + " ["
+                        + tagsText + EnumChatFormatting.RESET + "]";
+            }
+
             String statsText = getFormattedStars() + EnumChatFormatting.GRAY + " | " + EnumChatFormatting.RESET
                     + "FKDR: " + getFormattedFkdr();
             if (!tagsText.isEmpty()) {

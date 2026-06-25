@@ -72,8 +72,12 @@ public class NametagsStats extends Feature implements Global, BedwarsStatsServic
         if (event.getPlayer().isInvisibleToPlayer(mc.thePlayer)) return;
 
         String tags = stats.getVisibleTags(this);
-        String text = stats.getFormattedStars();
-        if (!tags.isEmpty()) {
+        if (!stats.hasHypixelStats() && tags.isEmpty()) {
+            return;
+        }
+
+        String text = stats.hasHypixelStats() ? stats.getFormattedStars() : tags;
+        if (stats.hasHypixelStats() && !tags.isEmpty()) {
             text += EnumChatFormatting.GRAY + " | " + tags;
         }
 
